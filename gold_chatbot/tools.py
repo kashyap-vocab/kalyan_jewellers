@@ -21,16 +21,23 @@ def gold_search(query: str) -> str:
         if not items:
             return f"No results found for: {query}"
 
-        # ✅ Add filtering step here
+        # Relax filtering: only exclude results if absolutely no items
+        # Instead of filtering, just sort or prioritize items containing some keywords
         keywords = ["today", "live", "current", str(datetime.now().year)]
-        filtered_items = [
-            item for item in items
-            if any(kw in item.get("snippet", "").lower() for kw in keywords) or
-               any(kw in item.get("title", "").lower() for kw in keywords)
-        ]
 
-        if not filtered_items:
-            return f"No up-to-date results found for: {query}"
+        # Separate items containing keywords vs others
+        prioritized = []
+        others = []
+        for item in items:
+            snippet = item.get("snippet", "").lower()
+            title = item.get("title", "").lower()
+            if any(kw in snippet or kw in title for kw in keywords):
+                prioritized.append(item)
+            else:
+                others.append(item)
+
+        # If no prioritized items found, fall back to all items
+        filtered_items = prioritized if prioritized else items
 
         # Format and return output
         output = []
@@ -44,13 +51,3 @@ def gold_search(query: str) -> str:
 
     except Exception as e:
         return f"Error using Google Search API: {str(e)}"
-
-gold_search_tool = Tool.from_function(
-    func=gold_search,
-    name="gold_price_search",
-    description=(
-        "Use this tool to search any information related to gold, silver, diamonds, shop timings, schemes, etc., "
-        "from trusted jewellery sites configured in the Google Custom Search (CSE). "
-        "Example: 'silver rate today', '22ct price', 'jewellery schemes kalyan', 'store timing kalyan jewellers', etc."
-    ),
-)
