@@ -125,50 +125,58 @@ load_dotenv()
 
 VALID_CARATS = [24, 22, 20, 18, 14, 10, 6]
 
-def extract_price_from_goodreturns(url: str, carat: float = 24.0) -> float:
+
+def extract_gold_price_bullions(karat: str, weight_grams: int) -> str:
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        r = requests.get(url, headers=headers, timeout=5)
-        soup = BeautifulSoup(r.text, "html.parser")
+        url = "https://bullions.co.in/"
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-        # Find first national price row
-        row = soup.find("tr", class_=lambda c: c and c.endswith("ratesrow"))
-        if not row:
-            raise ValueError("Could not find pricing row.")
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        cells = row.find_all("td")
-        if len(cells) < 2:
-            raise ValueError("Unexpected table format.")
+        # Find the gold price table
+        table = soup.find("table", class_="data")
+        rows = table.find("tbody").find_all("tr")
 
-        # GoodReturns shows ₹X,XXX/10g
-        raw = cells[1].get_text().split("/")[0].replace("₹", "").replace(",", "")
-        rate_per_10g = float(raw)
-        rate_per_gram_24ct = rate_per_10g / 10
+        karat = karat.strip().lower().replace("kt", "karat").replace("ct", "karat")
 
-        # Adjust for carat purity
-        purity = carat / 24.0
-        return rate_per_gram_24ct * purity
-
+        # Find the row matching the required karat
+        for row in rows:
+            cols = row.find_all("td")
+            if not cols:
+                continue
+            karat_name = cols[0].text.strip().lower()
+            if karat in karat_name:
+                if weight_grams == 1:
+                    price = cols[1].text
+                elif weight_grams == 10:
+                    price = cols[2].text
+                elif weight_grams == 100:
+                    price = cols[3].text
+                elif weight_grams == 1000:
+                    price = cols[4].text
+                else:
+                    return f"Weight {weight_grams}g not available. Try 1g, 10g, 100g, or 1kg."
+                return f"Price of {weight_grams}g {karat.title()} gold today is ₹{price}."
+        return f"{karat.title()} gold not found on the site."
     except Exception as e:
-        raise RuntimeError(f"Failed to parse {url}: {e}")
-
+        return f"Error fetching price: {str(e)}"
 
 def gold_search(query: str) -> str:
-    api_key = os.getenv("GOOGLE_API_KEY")
-    cx_id = os.getenv("GOOGLE_CX_ID")
-
-    if not api_key or not cx_id:
-        return "Error: GOOGLE_API_KEY and/or GOOGLE_CX_ID not set in .env"
-
     try:
-        # Extract weight, carat, metal
-        weight_match = re.search(r'(\d+(\.\d+)?)\s*(g|gram)', query.lower())
-        carat_match = re.search(r'(\d+(\.\d+)?)\s*ct', query.lower())
+        # Extract weight, carat, and metal from the query
+        weight_match = re.search(r'(\d+(\.\d+)?)\s*(g|gram|grams)', query.lower())
+        carat_match = re.search(r'(\d+(\.\d+)?)\s*(ct|karat|kt)', query.lower())
         metal_match = re.search(r'(gold|silver|platinum|palladium)', query.lower())
 
-        weight = float(weight_match.group(1)) if weight_match else 8.0
-        carat = float(carat_match.group(1)) if carat_match else 24.0
+        weight = int(float(weight_match.group(1))) if weight_match else 1
+        carat = int(float(carat_match.group(1))) if carat_match else 24
         metal = metal_match.group(1).lower() if metal_match else "gold"
+
+        if metal != "gold":
+            return f"Sorry, only gold prices are currently supported via bullions.co.in."
 
         if carat not in VALID_CARATS:
             return (
@@ -176,31 +184,10 @@ def gold_search(query: str) -> str:
                 f"Please choose from common options: {', '.join(map(str, VALID_CARATS))}ct"
             )
 
-        # Step 1: Search Google
-        service = build("customsearch", "v1", developerKey=api_key)
-        res = service.cse().list(q=f"{metal} price today", cx=cx_id, num=5).execute()
-        items = res.get("items", [])
-
-        if not items:
-            return f"🔍 No results found for: {query}"
-
-        for item in items:
-            link = item.get("link", "")
-            title = item.get("title", "")
-
-            if "goodreturns.in" in link:
-                # Step 2: Extract price
-                price_per_g = extract_price_from_goodreturns(link, carat)
-                total_price = price_per_g * weight
-
-                return f"{weight}g of {carat}ct {metal.title()}: ₹{total_price:,.2f}"
-
-
-        return "No trusted pricing source (like goodreturns.in) found in top results."
+        return extract_gold_price_bullions(str(carat), weight)
 
     except Exception as e:
-        return f"Error in gold_search: {str(e)}"
-
+        return f"[DEBUG ERROR] {str(e)}"
 
 # LangChain Tool wrapper
 gold_search_tool = Tool.from_function(
