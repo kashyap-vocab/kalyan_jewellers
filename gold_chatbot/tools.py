@@ -2,6 +2,7 @@ import os
 from googleapiclient.discovery import build
 from langchain.tools import Tool
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -14,14 +15,26 @@ def gold_search(query: str) -> str:
 
     try:
         service = build("customsearch", "v1", developerKey=api_key)
-        res = service.cse().list(q=query, cx=cx_id, num=3).execute()
+        res = service.cse().list(q=query, cx=cx_id, num=5).execute()
 
         items = res.get("items", [])
         if not items:
             return f"No results found for: {query}"
 
+        # ✅ Add filtering step here
+        keywords = ["today", "live", "current", str(datetime.now().year)]
+        filtered_items = [
+            item for item in items
+            if any(kw in item.get("snippet", "").lower() for kw in keywords) or
+               any(kw in item.get("title", "").lower() for kw in keywords)
+        ]
+
+        if not filtered_items:
+            return f"No up-to-date results found for: {query}"
+
+        # Format and return output
         output = []
-        for item in items:
+        for item in filtered_items:
             title = item.get("title", "")
             snippet = item.get("snippet", "")
             link = item.get("link", "")
@@ -37,7 +50,7 @@ gold_search_tool = Tool.from_function(
     name="gold_price_search",
     description=(
         "Use this tool to search any information related to gold, silver, diamonds, shop timings, schemes, etc., "
-        "from trusted jewellery sites configured in the Google Custom Search (CSE). Example: "
-        "'silver rate today', '22ct price', 'jewellery schemes kalyan', 'store timing kalyan jewellers', etc."
+        "from trusted jewellery sites configured in the Google Custom Search (CSE). "
+        "Example: 'silver rate today', '22ct price', 'jewellery schemes kalyan', 'store timing kalyan jewellers', etc."
     ),
 )
