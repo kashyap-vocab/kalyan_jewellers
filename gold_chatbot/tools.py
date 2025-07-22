@@ -51,3 +51,13 @@ def gold_search(query: str) -> str:
 
     except Exception as e:
         return f"Error using Google Search API: {str(e)}"
+    
+gold_search_tool = Tool.from_function(
+    func=gold_search,
+    name="gold_price_search",
+    description=(
+        "Use this tool to fetch the current gold price, "
+        "live gold rate, or jewellery-related information from the web. "
+        "Provide a clear query like 'gold price today' or '22 carat gold rate in India'."
+    )
+)
