@@ -52,10 +52,33 @@ if user_input:
         tts_response.raise_for_status()
         audio_base64 = tts_response.json().get("audio")
 
+        # if audio_base64:
+        #     audio_bytes = base64.b64decode(audio_base64)
+        #     st.audio(audio_bytes, format="audio/wav", autoplay=True)
+        # else:
+        #     st.warning("TTS API did not return audio data.")
         if audio_base64:
             audio_bytes = base64.b64decode(audio_base64)
-            st.audio(audio_bytes, format="audio/wav", autoplay=True)
+
+            import uuid
+            audio_id = str(uuid.uuid4())
+            audio_b64 = base64.b64encode(audio_bytes).decode()
+
+            audio_html = f"""
+            <audio id="{audio_id}" autoplay hidden>
+                <source src="data:audio/wav;base64,{audio_b64}" type="audio/wav">
+            </audio>
+            <script>
+                var audio = document.getElementById("{audio_id}");
+                if (audio) {{
+                    audio.play();
+                }}
+            </script>
+            """
+
+            st.components.v1.html(audio_html, height=0)
         else:
             st.warning("TTS API did not return audio data.")
+
     except Exception as e:
         st.error(f"🔊 TTS error: {e}")
