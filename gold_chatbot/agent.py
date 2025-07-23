@@ -62,7 +62,7 @@ state = {"messages": []}
 #     user_input = input("You: ")
 
 #     if user_input.lower() in ["exit", "quit"]:
-#         print("Assistant: Goodbye! 👋")
+#         print("Assistant: Goodbye!")
 #         break
 
 #     state = graph.invoke({"messages": [{"role": "user", "content": user_input}]})
