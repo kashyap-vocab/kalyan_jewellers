@@ -7,7 +7,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END
 
 
-from tools import gold_search_tool
+from tools import gold_price_data
 from system_message import cred_system_kalyan_jewelers
 
 from guidelines_context import get_guidelines_context
@@ -22,7 +22,7 @@ llm=ChatGoogleGenerativeAI(
 )
 
 
-tools=[gold_search_tool]
+tools=[gold_price_data]
 llm_bind_tools=llm.bind_tools(tools)
 
 
