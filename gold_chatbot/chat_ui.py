@@ -9,7 +9,8 @@ st.title("💍 Kalyan Jewellers Assistant")
 
 # ---- Configuration Variables ----
 server_url = "https://kalyan-jewellers-fastapi.onrender.com"
-tts_url = "http://27.111.72.55:5052/synthesize"
+# tts_url = "http://27.111.72.55:5052/synthesize"
+tts_url="http://27.111.72.55:5006/google_tts"
 
 # ---- Session State Init ----
 if "chat_history" not in st.session_state:
@@ -23,65 +24,6 @@ for msg in st.session_state.chat_history:
 # ---- Chat Input ----
 user_input = st.chat_input("Ask me about gold rates, offers, or stores...")
 
-# if user_input:
-#     # Show user message
-#     st.session_state.chat_history.append({"role": "user", "content": user_input})
-#     with st.chat_message("user"):
-#         st.markdown(user_input)
-
-#     # ---- Send to LLM Backend ----
-#     try:
-#         response = requests.post(f"{server_url}/chat", json={"message": user_input})
-#         response.raise_for_status()
-#         reply = response.json()["response"]
-#     except Exception as e:
-#         reply = f"Error connecting to server: {e}"
-
-#     # Show assistant reply
-#     st.session_state.chat_history.append({"role": "assistant", "content": reply})
-#     with st.chat_message("assistant"):
-#         st.markdown(reply)
-
-#     # ---- Send to Tacotron TTS ----
-#     try:
-#         tts_response = requests.post(
-#             tts_url,
-#             json={"text": reply},
-#             headers={"Content-Type": "application/json"},
-#         )
-#         tts_response.raise_for_status()
-#         audio_base64 = tts_response.json().get("audio")
-
-#         # if audio_base64:
-#         #     audio_bytes = base64.b64decode(audio_base64)
-#         #     st.audio(audio_bytes, format="audio/wav", autoplay=True)
-#         # else:
-#         #     st.warning("TTS API did not return audio data.")
-#         if audio_base64:
-#             audio_bytes = base64.b64decode(audio_base64)
-
-#             import uuid
-#             audio_id = str(uuid.uuid4())
-#             audio_b64 = base64.b64encode(audio_bytes).decode()
-
-#             audio_html = f"""
-#             <audio id="{audio_id}" autoplay hidden>
-#                 <source src="data:audio/wav;base64,{audio_b64}" type="audio/wav">
-#             </audio>
-#             <script>
-#                 var audio = document.getElementById("{audio_id}");
-#                 if (audio) {{
-#                     audio.play();
-#                 }}
-#             </script>
-#             """
-
-#             st.components.v1.html(audio_html, height=0)
-#         else:
-#             st.warning("TTS API did not return audio data.")
-
-#     except Exception as e:
-#         st.error(f"🔊 TTS error: {e}")
 if user_input:
     # Show user message
     st.session_state.chat_history.append({"role": "user", "content": user_input})
