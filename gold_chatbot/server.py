@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
 
 session_state = {"messages": []}
 
+start_time=time.time()
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     user_message = {"role": "user", "content": request.message}
